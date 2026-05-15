@@ -1,30 +1,99 @@
 # ESP8266 Dual LED Alternating Blink
 
-دو LED به صورت متناوب با فاصله یک ثانیه چشمک می‌زنند — یکی روشن، دیگری خاموش، بعد برعکس.
+[![Platform](https://img.shields.io/badge/platform-ESP8266-blue)](https://www.espressif.com/en/products/socs/esp8266)
+[![Framework](https://img.shields.io/badge/framework-Arduino-teal)](https://www.arduino.cc/)
+[![Language](https://img.shields.io/badge/language-C++-orange)](https://isocpp.org/)
+
+پروژه آموزشی چشمک‌زن دو LED روی میکروکنترلر ESP8266 — دو LED به صورت متناوب روشن و خاموش می‌شوند.
 
 ---
 
-## سخت‌افزار مورد نیاز
+## فهرست مطالب
 
-| قطعه | مشخصات |
-|------|---------|
-| میکروکنترلر | ESP8266MOD روی برد NodeMCU v2 |
-| برد واسط | Raspberry Pi (هر نسخه‌ای) |
-| LED | ۲ عدد |
-| مقاومت | ۲ عدد ۲۲۰ اهم (برای محافظت LED) |
-
-### اتصال پین‌ها
-
-```
-ESP8266 D0 (GPIO16) ──[ 220Ω ]──[ LED1 ]── GND
-ESP8266 D1 (GPIO5)  ──[ 220Ω ]──[ LED2 ]── GND
-```
-
-> **نکته:** پین‌های D0 و D1 روی برد NodeMCU برچسب‌گذاری شده‌اند. D0 در واقع GPIO16 و D1 در واقع GPIO5 است.
+- [توضیح پروژه](#توضیح-پروژه)
+- [لیست قطعات](#لیست-قطعات)
+- [سیم‌کشی و نقشه مدار](#سیم‌کشی-و-نقشه-مدار)
+- [پیش‌نیازها و نصب](#پیش‌نیازها-و-نصب)
+- [مراحل اجرا](#مراحل-اجرا)
+- [رفع خطا](#رفع-خطا)
+- [پیشنهادات بهبود](#پیشنهادات-بهبود)
+- [توضیح کد](CODE_EXPLANATION.md)
 
 ---
 
-## پیش‌نیازها
+## توضیح پروژه
+
+این پروژه پایه‌ای‌ترین قدم برای شروع کار با میکروکنترلر ESP8266 است. هدف این است که:
+
+- با محیط PlatformIO آشنا شوید
+- نحوه کامپایل و آپلود firmware را یاد بگیرید
+- با پین‌های GPIO کار کنید
+- زنجیره توسعه VM → Raspberry Pi → ESP8266 را تجربه کنید
+
+**عملکرد:** دو LED با فاصله یک ثانیه به صورت متناوب روشن و خاموش می‌شوند — وقتی LED1 روشن است، LED2 خاموش است و برعکس.
+
+---
+
+## لیست قطعات
+
+- میکروکنترلر: ESP8266MOD روی برد NodeMCU v2
+- برد واسط: Raspberry Pi 4B
+- LED (هر رنگی): ۲ عدد
+- مقاومت ۲۲۰ اهم: ۲ عدد
+- کابل Micro-USB: ۱ عدد (اتصال Pi به ESP8266)
+- سیم جامپر نر-نر: ۴ عدد
+
+> **چرا مقاومت ۲۲۰ اهم؟**
+> پین‌های ESP8266 ولتاژ ۳.۳ ولت دارند. جریان ایمن برای LED حدود ۱۵ میلی‌آمپر است:
+> `R = V / I = 3.3V / 0.015A ≈ 220Ω`
+> بدون مقاومت، جریان بیش از حد LED را می‌سوزاند.
+
+---
+
+## سیم‌کشی و نقشه مدار
+
+### جدول پین‌ها
+
+- پین `D0` (GPIO16) → مقاومت 220Ω → آند LED1 → کاتد به GND
+- پین `D1` (GPIO5)  → مقاومت 220Ω → آند LED2 → کاتد به GND
+- پین `GND` → GND مشترک هر دو LED
+- Raspberry Pi → کابل Micro-USB → پورت USB برد NodeMCU
+
+### نقشه مدار
+
+```
+                 ┌─────────────────────────────────┐
+                 │        ESP8266 NodeMCU v2        │
+                 │                                 │
+   Raspberry Pi  │                                 │
+   USB ──────────┤ Micro-USB                       │
+                 │                                 │
+                 │             D1 (GPIO5)  ─────────┼──[220Ω]──┬──►|──┐
+                 │                                 │          │ LED2  │
+                 │             D0 (GPIO16) ─────────┼──[220Ω]──┼──►|──┤
+                 │                                 │          │ LED1  │
+                 │                          GND ───┼──────────┴───────┘
+                 └─────────────────────────────────┘
+
+   ►| = LED  (آند به سمت راست، کاتد به سمت چپ)
+```
+
+### نحوه اتصال قدم به قدم
+
+1. پایه بلندتر LED1 (آند) را از طریق مقاومت ۲۲۰Ω به پین `D0` وصل کنید
+2. پایه کوتاه‌تر LED1 (کاتد) را به `GND` وصل کنید
+3. همین کار را برای LED2 با پین `D1` تکرار کنید
+4. ESP8266 را از طریق Micro-USB به Raspberry Pi وصل کنید
+
+---
+
+## پیش‌نیازها و نصب
+
+### روی کامپیوتر توسعه (VM یا لپ‌تاپ)
+
+```bash
+pip3 install platformio
+```
 
 ### روی Raspberry Pi
 
@@ -32,68 +101,30 @@ ESP8266 D1 (GPIO5)  ──[ 220Ω ]──[ LED2 ]── GND
 # نصب esptool برای فلش کردن ESP8266
 pip3 install esptool
 
-# اطمینان از دسترسی به پورت سریال (بدون sudo)
+# دسترسی به پورت سریال بدون نیاز به sudo
 sudo usermod -aG dialout $USER
-# بعد از این دستور، باید log out و دوباره log in کنی
 ```
 
-### روی کامپیوتر توسعه
-
-```bash
-# نصب PlatformIO CLI
-pip3 install platformio
-```
-
----
-
-## ساختار پروژه
-
-```
-led-blink/
-├── platformio.ini   # تنظیمات PlatformIO: برد، پورت، فریم‌ورک
-├── src/
-│   └── main.cpp     # کد اصلی برنامه
-└── .gitignore       # حذف پوشه .pio/ از git (فایل‌های موقت کامپایل)
-```
-
----
-
-## کد برنامه
-
-```cpp
-#include <Arduino.h>
-
-#define LED1 D0   // GPIO16
-#define LED2 D1   // GPIO5
-
-void setup() {
-  pinMode(LED1, OUTPUT);
-  pinMode(LED2, OUTPUT);
-}
-
-void loop() {
-  digitalWrite(LED1, HIGH);  // LED1 روشن
-  digitalWrite(LED2, LOW);   // LED2 خاموش
-  delay(1000);               // یک ثانیه صبر
-
-  digitalWrite(LED1, LOW);   // LED1 خاموش
-  digitalWrite(LED2, HIGH);  // LED2 روشن
-  delay(1000);               // یک ثانیه صبر
-}
-```
+> پس از دستور `usermod` باید log out و دوباره log in کنید تا تغییرات اعمال شود.
 
 ---
 
 ## مراحل اجرا
 
-### ۱. کامپایل کردن
+### گام ۱ — کلون کردن ریپو
+
+```bash
+git clone https://github.com/Sahandazadee/led-blink.git
+cd led-blink
+```
+
+### گام ۲ — کامپایل
 
 ```bash
 pio run
 ```
 
-**این دستور چه می‌کند؟**
-PlatformIO کد C++ را با toolchain مخصوص ESP8266 (xtensa-lx106) کامپایل می‌کند و فایل `firmware.bin` را در پوشه `.pio/build/esp8266mod/` می‌سازد.
+PlatformIO کد را با toolchain مخصوص ESP8266 کامپایل می‌کند و فایل `firmware.bin` را در مسیر `.pio/build/esp8266mod/` می‌سازد.
 
 خروجی موفق:
 ```
@@ -102,96 +133,100 @@ Flash: [===       ]  25.0% (used 261511 bytes from 1044464 bytes)
 ========================= [SUCCESS] =========================
 ```
 
----
-
-### ۲. انتقال firmware به Raspberry Pi
+### گام ۳ — انتقال firmware به Raspberry Pi
 
 ```bash
 scp .pio/build/esp8266mod/firmware.bin sahand@192.168.0.148:/tmp/firmware.bin
 ```
 
-**این دستور چه می‌کند؟**
-`scp` (Secure Copy) فایل را از کامپیوتر ما از طریق SSH به Raspberry Pi کپی می‌کند. `/tmp/` یک پوشه موقت روی Pi است.
+`scp` فایل باینری را از طریق SSH به Pi منتقل می‌کند.
 
----
+### گام ۴ — فلش کردن روی ESP8266
 
-### ۳. فلش کردن روی ESP8266
-
-روی Raspberry Pi (یا از طریق SSH):
+روی Raspberry Pi یا از طریق SSH:
 
 ```bash
 python3 -m esptool --port /dev/ttyACM0 --baud 115200 write-flash 0x00000 /tmp/firmware.bin
 ```
 
-**هر بخش این دستور چه معنایی دارد؟**
-
-| بخش | توضیح |
-|-----|-------|
-| `python3 -m esptool` | اجرای esptool به عنوان ماژول Python |
-| `--port /dev/ttyACM0` | پورت USB که ESP8266 به آن وصل است |
-| `--baud 115200` | سرعت ارتباط سریال (bits per second) |
-| `write-flash` | دستور نوشتن روی حافظه flash |
-| `0x00000` | آدرس شروع نوشتن — ابتدای flash |
-| `/tmp/firmware.bin` | فایل باینری که باید نوشته شود |
+- `--port /dev/ttyACM0` — پورت USB که ESP8266 به آن وصل است
+- `--baud 115200` — سرعت ارتباط سریال
+- `write-flash 0x00000` — نوشتن از ابتدای حافظه flash
+- `/tmp/firmware.bin` — فایل باینری
 
 خروجی موفق:
 ```
 Detecting chip type... ESP8266
-Wrote 265664 bytes (195753 compressed) at 0x00000000 in 17.9 seconds
+Wrote 265664 bytes at 0x00000000 in 17.9 seconds
 Hash of data verified.
 Hard resetting via RTS pin...
 ```
 
+پس از اتمام، ESP8266 به صورت خودکار reset می‌شود و LEDها شروع به چشمک زدن می‌کنند.
+
 ---
 
-## خطاهایی که ممکن است پیش بیاید
+## رفع خطا
 
-### خطا ۱: board ID ناشناخته
+### خطا: board ID ناشناخته
+
 ```
 Error: Unknown board ID 'esp8266mod'
 ```
-**علت:** PlatformIO این نام را نمی‌شناسد.
-**راه‌حل:** در `platformio.ini` بنویس `board = nodemcuv2`
 
-برای دیدن لیست board های معتبر:
+**علت:** PlatformIO این نام را نمی‌شناسد.
+
+**راه‌حل:** در `platformio.ini` مقدار `board` را به `nodemcuv2` تغییر دهید:
+
 ```bash
-pio boards espressif8266
+pio boards espressif8266   # لیست board های معتبر
 ```
 
 ---
 
-### خطا ۲: پورت سریال پیدا نشد
+### خطا: پورت سریال پیدا نشد
+
 ```
 Could not open /dev/ttyUSB0: No such file or directory
 ```
-**علت:** پورت اشتباه است. بسته به نوع تراشه USB-to-Serial روی برد، پورت می‌تواند `ttyUSB0` یا `ttyACM0` باشد.
-**راه‌حل:** پورت واقعی را پیدا کن:
+
+**علت:** پورت اشتباه است. بسته به تراشه USB-to-Serial روی برد، پورت می‌تواند `ttyUSB0` یا `ttyACM0` باشد.
+
+**راه‌حل:** پورت واقعی را پیدا کنید:
+
 ```bash
 ls /dev/tty* | grep -E 'USB|ACM'
 ```
-NodeMCU معمولاً روی `ttyACM0` می‌آید.
+
+NodeMCU با تراشه CH340 معمولاً روی `ttyACM0` می‌آید.
 
 ---
 
-### خطا ۳: دسترسی به پورت رد شد
+### خطا: دسترسی رد شد
+
 ```
 Permission denied: '/dev/ttyACM0'
 ```
+
 **علت:** کاربر عضو گروه `dialout` نیست.
+
 **راه‌حل:**
+
 ```bash
 sudo usermod -aG dialout $USER
-# سپس log out و log in کن
+# سپس log out و log in کنید
 ```
 
 ---
 
-### خطا ۴: هویت git ناشناخته
+### خطا: هویت git ناشناخته
+
 ```
 Author identity unknown — fatal: unable to auto-detect email address
 ```
-**علت:** git هیچ‌وقت روی این سیستم تنظیم نشده.
+
 **راه‌حل:**
+
 ```bash
 git config --global user.email "your@email.com"
 git config --global user.name "YourName"
@@ -199,14 +234,26 @@ git config --global user.name "YourName"
 
 ---
 
-## تنظیمات platformio.ini
+### LED روشن نمی‌شود
 
-```ini
-[env:esp8266mod]
-platform = espressif8266
-board = nodemcuv2          ; برد NodeMCU v2 با ماژول ESP-12E
-framework = arduino        ; استفاده از فریم‌ورک Arduino
-upload_port = /dev/ttyACM0 ; پورت سریال روی Raspberry Pi
-monitor_port = /dev/ttyACM0
-monitor_speed = 115200     ; سرعت Serial Monitor
-```
+- بررسی کنید آند و کاتد LED جابجا نباشند (پایه بلندتر = آند)
+- بررسی کنید مقاومت سر جای خود است
+- با مولتی‌متر ولتاژ پین D0 و D1 را هنگام اجرا اندازه بگیرید (باید بین ۰ و ۳.۳ ولت تغییر کند)
+- اطمینان حاصل کنید firmware با موفقیت فلش شده است
+
+---
+
+## پیشنهادات بهبود
+
+- **کنترل سرعت با پتانسیومتر:** اضافه کردن پتانسیومتر به پین A0 برای تغییر سرعت چشمک‌زنی بدون کامپایل مجدد
+- **کنترل از طریق Serial:** دریافت دستور از Serial Monitor برای روشن/خاموش کردن LEDها
+- **Fade با PWM:** به جای on/off ناگهانی، از `analogWrite` برای fade-in/fade-out استفاده کنید
+- **WiFi Control:** با استفاده از WiFi داخلی ESP8266، یک وب‌سرور ساده بسازید و LEDها را از مرورگر کنترل کنید
+- **MQTT:** اتصال به یک MQTT broker برای کنترل از راه دور با پروتکل استاندارد IoT
+- **گسترش به ۸ LED:** استفاده از شیفت رجیستر 74HC595 برای کنترل ۸ LED با تنها ۳ پین
+
+---
+
+## توضیح کد
+
+برای توضیح کامل و خط به خط کد، فایل [CODE_EXPLANATION.md](CODE_EXPLANATION.md) را مطالعه کنید.
